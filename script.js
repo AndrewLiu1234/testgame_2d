@@ -1,6 +1,8 @@
 window.addEventListener('DOMContentLoaded', () => {
   const canvas = document.getElementById('gameCanvas');
   const ctx = canvas.getContext('2d');
+  const playerImg = new Image();
+  playerImg.src = 'Sprites/towerup.png'; // Your sprite image file
 
   class Wall {
     constructor(x, y, width, height, color = '#333', collidable = true) {
@@ -13,8 +15,9 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     draw(ctx) {
-      ctx.fillStyle = this.color;
-      ctx.fillRect(this.x, this.y, this.width, this.height);
+    //   ctx.fillStyle = this.color;
+    //   ctx.fillRect(this.x, this.y, this.width, this.height);
+      ctx.drawImage(playerImg, player.x, player.y, player.size, player.size);
     }
 
     setCollidable(state) {
