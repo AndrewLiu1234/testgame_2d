@@ -1,8 +1,6 @@
 window.addEventListener('DOMContentLoaded', () => {
   const canvas = document.getElementById('gameCanvas');
   const ctx = canvas.getContext('2d');
-  const playerImg = new Image();
-  playerImg.src = 'Sprites/towerup.png'; // Your sprite image file
 
   class Wall {
     constructor(x, y, width, height, color = '#333', collidable = true) {
@@ -15,9 +13,8 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     draw(ctx) {
-    //   ctx.fillStyle = this.color;
-    //   ctx.fillRect(this.x, this.y, this.width, this.height);
-      ctx.drawImage(playerImg, player.x, player.y, player.size, player.size);
+      ctx.fillStyle = this.color;
+      ctx.fillRect(this.x, this.y, this.width, this.height);
     }
 
     setCollidable(state) {
@@ -29,24 +26,26 @@ window.addEventListener('DOMContentLoaded', () => {
     x: 50,
     y: 50,
     size: 30,
-    color: '#ffdd57',
     speed: 3
   };
 
+  // Load player image sprite
+  const playerImg = new Image();
+  playerImg.src = 'player.png'; // Put your uploaded PNG file path here
+
+  // Walls and door setup (same as before)
   const doorHeight = 60;
   const doorY = canvas.height / 2 - doorHeight / 2;
 
-  // Middle wall with door
   const wallTop = new Wall(200, 0, 20, doorY);
   const wallBottom = new Wall(200, doorY + doorHeight, 20, canvas.height - (doorY + doorHeight));
   const door = new Wall(200, doorY, 20, doorHeight, '#884400', true);
   door.open = false;
 
-  // Map boundaries
-  const wallLeft = new Wall(0, 0, 10, canvas.height); // Left edge
-  const wallRight = new Wall(canvas.width - 10, 0, 10, canvas.height); // Right edge
-  const wallTopEdge = new Wall(0, 0, canvas.width, 10); // Top edge
-  const wallBottomEdge = new Wall(0, canvas.height - 10, canvas.width, 10); // Bottom edge
+  const wallLeft = new Wall(0, 0, 10, canvas.height);
+  const wallRight = new Wall(canvas.width - 10, 0, 10, canvas.height);
+  const wallTopEdge = new Wall(0, 0, canvas.width, 10);
+  const wallBottomEdge = new Wall(0, canvas.height - 10, canvas.width, 10);
 
   const walls = [
     wallTop,
@@ -92,7 +91,6 @@ window.addEventListener('DOMContentLoaded', () => {
     if (keys['arrowleft'] || keys['a']) nextX -= player.speed;
     if (keys['arrowright'] || keys['d']) nextX += player.speed;
 
-    // Collision check
     let blocked = false;
     for (const wall of walls) {
       if (wall.collidable && isColliding(nextX, nextY, player.size, wall)) {
@@ -117,8 +115,13 @@ window.addEventListener('DOMContentLoaded', () => {
       wall.draw(ctx);
     }
 
-    ctx.fillStyle = player.color;
-    ctx.fillRect(player.x, player.y, player.size, player.size);
+    // Draw player image if loaded, else fallback to rectangle
+    if (playerImg.complete && playerImg.naturalWidth !== 0) {
+      ctx.drawImage(playerImg, player.x, player.y, player.size, player.size);
+    } else {
+      ctx.fillStyle = '#ffdd57';
+      ctx.fillRect(player.x, player.y, player.size, player.size);
+    }
 
     ctx.fillStyle = '#fff';
     ctx.font = '16px sans-serif';
