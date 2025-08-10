@@ -2,6 +2,7 @@ window.addEventListener('DOMContentLoaded', () => {
   const canvas = document.getElementById('gameCanvas');
   const ctx = canvas.getContext('2d');
 
+  //LOADING CLASSES
   class Wall {
     constructor(x, y, width, height, color = '#333', collidable = true) {
       this.x = x;
@@ -22,18 +23,46 @@ window.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+
+  //PICTURE UPLOAD
+  const spriteSheet = new Image();
+  spriteSheet.src = 'pics/spritesheet.png'; // Your uploaded file path
+  const playerImg = new Image();
+  playerImg.src = 'pics/towerup.png'; // Put your uploaded PNG file path here
+   
+  //SPRITE SHEET INFO
+  const frameWidth = 64;  // change according to your sprite
+  const frameHeight = 64; // change according to your sprite
+
+
+  const frameCount = 9;  // number of frames per row (columns)
+  const directions = {
+    down: 0,
+    left: 1,
+    right: 2,
+    up: 3
+  };
+
+   let currentFrame = 0;
+   let currentDirection = directions.down; // default facing down
+   let lastTime = Date.now();
+
+   let frameTimer = 0;
+   const frameDuration = 100; // ms per frame
+   //END SPRITE SHEET INFO
+
+  //DEF PLAYER
   const player = {
     x: 50,
     y: 50,
-    size: 30,
-    speed: 3
-  };
+    width: frameWidth,
+    height: frameHeight,
+    speed: 2,
+    moving: false,
+   };
 
-  // Load player image sprite
-  const playerImg = new Image();
-  playerImg.src = 'pics/towerup.png'; // Put your uploaded PNG file path here
 
-  // Walls and door setup (same as before)
+  // SET UP WALLS/BORDERS
   const doorHeight = 60;
   const doorY = canvas.height / 2 - doorHeight / 2;
 
@@ -47,6 +76,7 @@ window.addEventListener('DOMContentLoaded', () => {
   const wallTopEdge = new Wall(0, 0, canvas.width, 10);
   const wallBottomEdge = new Wall(0, canvas.height - 10, canvas.width, 10);
 
+  //DEFINE WALLS
   const walls = [
     wallTop,
     wallBottom,
@@ -57,6 +87,7 @@ window.addEventListener('DOMContentLoaded', () => {
     wallBottomEdge
   ];
 
+  //MOVEMENT / CONTROLS
   const keys = {};
 
   document.addEventListener('keydown', e => {
@@ -82,14 +113,37 @@ window.addEventListener('DOMContentLoaded', () => {
     );
   }
 
+
+
   function update() {
+    let now = Date.now();
+    let elapsed = now-lastTime;
+    lastTime = now;
+
     let nextX = player.x;
     let nextY = player.y;
+    let moving = false;
 
-    if (keys['arrowup'] || keys['w']) nextY -= player.speed;
-    if (keys['arrowdown'] || keys['s']) nextY += player.speed;
-    if (keys['arrowleft'] || keys['a']) nextX -= player.speed;
-    if (keys['arrowright'] || keys['d']) nextX += player.speed;
+    if (keys['arrowup'] || keys['w']) {
+        nextY -= player.speed;
+        player.currentDirection = directions.up;
+        moving = true;
+    }
+    if (keys['arrowdown'] || keys['s']) {
+        nextY += player.speed;
+        player.currentDirection = directions.down;
+        moving = true;
+    }
+    if (keys['arrowleft'] || keys['a']) {
+        nextX -= player.speed;
+        player.currentDirection = directions.left;
+        moving = true;
+    }
+    if (keys['arrowright'] || keys['d']) {
+        nextX += player.speed;
+        player.currentDirection = directions.right;
+        moving = true;
+    }
 
     let blocked = false;
     for (const wall of walls) {
@@ -99,11 +153,40 @@ window.addEventListener('DOMContentLoaded', () => {
       }
     }
 
-    if (!blocked) {
-      player.x = nextX;
-      player.y = nextY;
+    if (moving) {
+        //moving animation continues regardless
+        frameTimer += elapsed;
+        if (frameTimer > frameDuration) {
+            frameTimer = 0;
+            currentFrame = (currentFrame + 1) % frameCount;
+        }
+
+        //doesnt move if blocked by wall or sum
+        if (!blocked) {
+            player.x = nextX;
+            player.y = nextY;
+        }
+    } else {
+        frameTimer = 0;
+        currentFrame = 0;
     }
+
   }
+
+
+  function drawPlayer(ctx) {
+    ctx.drawImage(
+        spriteSheet,
+        currentFrame * frameWidth,
+        currentDirection * frameHeight,
+        frameWidth,
+        frameHeight,
+        player.x,
+        player.y,
+        player.width,
+        player.height
+    );
+   }
 
   function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -115,13 +198,7 @@ window.addEventListener('DOMContentLoaded', () => {
       wall.draw(ctx);
     }
 
-    // Draw player image if loaded, else fallback to rectangle
-    if (playerImg.complete && playerImg.naturalWidth !== 0) {
-      ctx.drawImage(playerImg, player.x, player.y, player.size, player.size);
-    } else {
-      ctx.fillStyle = '#ffdd57';
-      ctx.fillRect(player.x, player.y, player.size, player.size);
-    }
+    drawPlayer();
 
     ctx.fillStyle = '#fff';
     ctx.font = '16px sans-serif';
