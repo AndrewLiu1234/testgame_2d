@@ -106,12 +106,12 @@ window.addEventListener('DOMContentLoaded', () => {
     keys[e.key.toLowerCase()] = false;
   });
 
-  function isColliding(px, py, ps, obj) {
+  function isColliding(px, py, pw, ph, obj) {
     return (
       px < obj.x + obj.width &&
-      px + ps > obj.x &&
+      px + pw > obj.x &&
       py < obj.y + obj.height &&
-      py + ps > obj.y
+      py + ph > obj.y
     );
   }
 
@@ -149,7 +149,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     let blocked = false;
     for (const wall of walls) {
-      if (wall.collidable && isColliding(nextX, nextY, player.size, wall)) {
+      if (wall.collidable && isColliding(nextX, nextY, player.width, player.height, wall)) {
         blocked = true;
         break;
       }
