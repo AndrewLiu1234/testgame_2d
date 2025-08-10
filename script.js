@@ -1,8 +1,14 @@
 window.addEventListener('DOMContentLoaded', () => {
+
+  /*** =========
+   * CANVAS SETUP
+   * ========= */
   const canvas = document.getElementById('gameCanvas');
   const ctx = canvas.getContext('2d');
 
-  //LOADING CLASSES
+  /*** =========
+   * CLASSES
+   * ========= */
   class Wall {
     constructor(x, y, width, height, color = '#333', collidable = true) {
       this.x = x;
@@ -12,47 +18,34 @@ window.addEventListener('DOMContentLoaded', () => {
       this.color = color;
       this.collidable = collidable;
     }
-
     draw(ctx) {
       ctx.fillStyle = this.color;
       ctx.fillRect(this.x, this.y, this.width, this.height);
     }
-
     setCollidable(state) {
       this.collidable = state;
     }
   }
 
-
-  //PICTURE UPLOAD
+  /*** =========
+   * SPRITE SETUP
+   * ========= */
   const spriteSheet = new Image();
-  //spriteSheet.src = 'spritesheet.png'; // Your uploaded file path
-  spriteSheet.src = 'pics/spritesheet.png'; // Your uploaded file path
-  //const playerImg = new Image();
-  //playerImg.src = 'pics/towerup.png'; // Put your uploaded PNG file path here
-   
-  //SPRITE SHEET INFO
-  const frameWidth = 64;  // change according to your sprite
-  const frameHeight = 64; // change according to your sprite
+  spriteSheet.src = 'pics/spritesheet.png';
 
+  const frameWidth = 64;
+  const frameHeight = 64;
+  const frameCount = 9;
+  const directions = { up: 0, left: 1, down: 2, right: 3 };
 
-  const frameCount = 9;  // number of frames per row (columns)
-  const directions = {
-    up: 0,
-    left: 1,
-    down: 2,
-    right: 3,
-  };
+  let currentFrame = 0;
+  let lastTime = Date.now();
+  let frameTimer = 0;
+  const frameDuration = 100; // ms per frame
 
-   let currentFrame = 0;
-   //let currentDirection = directions.down; // default facing down
-   let lastTime = Date.now();
-
-   let frameTimer = 0;
-   const frameDuration = 100; // ms per frame
-   //END SPRITE SHEET INFO
-
-  //DEF PLAYER
+  /*** =========
+   * PLAYER SETUP
+   * ========= */
   const player = {
     x: 50,
     y: 50,
@@ -61,10 +54,11 @@ window.addEventListener('DOMContentLoaded', () => {
     speed: 2,
     currentDirection: directions.down,
     moving: false,
-   };
+  };
 
-
-  // SET UP WALLS/BORDERS
+  /*** =========
+   * WALLS & DOOR
+   * ========= */
   const doorHeight = 100;
   const doorY = canvas.height / 2 - doorHeight / 2;
 
@@ -78,27 +72,29 @@ window.addEventListener('DOMContentLoaded', () => {
   const wallTopEdge = new Wall(0, 0, canvas.width, 10);
   const wallBottomEdge = new Wall(0, canvas.height - 10, canvas.width, 10);
 
-  //DEFINE WALLS
-  const walls = [
-    wallTop,
-    wallBottom,
-    door,
-    wallLeft,
-    wallRight,
-    wallTopEdge,
-    wallBottomEdge
-  ];
+  const walls = [wallTop, wallBottom, door, wallLeft, wallRight, wallTopEdge, wallBottomEdge];
 
-  //MOVEMENT / CONTROLS
+  /*** =========
+   * INPUT HANDLING
+   * ========= */
   const keys = {};
+  let paused = false;
+  let debugMode = false;
 
   document.addEventListener('keydown', e => {
-    keys[e.key.toLowerCase()] = true;
+    const key = e.key.toLowerCase();
+    keys[key] = true;
 
-    if (e.key.toLowerCase() === 'e') {
+    if (key === 'e') { // toggle door
       door.open = !door.open;
       door.setCollidable(!door.open);
       door.color = door.open ? '#555' : '#884400';
+    }
+    if (key === 'p') { // pause game
+      paused = !paused;
+    }
+    if (key === 't') { // toggle debug mode
+      debugMode = !debugMode;
     }
   });
 
@@ -106,6 +102,9 @@ window.addEventListener('DOMContentLoaded', () => {
     keys[e.key.toLowerCase()] = false;
   });
 
+  /*** =========
+   * HELPER FUNCTIONS
+   * ========= */
   function isColliding(px, py, pw, ph, obj) {
     return (
       px < obj.x + obj.width &&
@@ -115,80 +114,80 @@ window.addEventListener('DOMContentLoaded', () => {
     );
   }
 
-
-
-  function update() {
-    let now = Date.now();
-    let elapsed = now-lastTime;
-    lastTime = now;
-
+  function movePlayer(elapsed) {
     let nextX = player.x;
     let nextY = player.y;
     player.moving = false;
 
-    if (keys['arrowup'] || keys['w']) {
-        nextY -= player.speed;
-        player.currentDirection = directions.up;
-        player.moving = true;
-    }
-    if (keys['arrowdown'] || keys['s']) {
-        nextY += player.speed;
-        player.currentDirection = directions.down;
-        player.moving = true;
-    }
-    if (keys['arrowleft'] || keys['a']) {
-        nextX -= player.speed;
-        player.currentDirection = directions.left;
-        player.moving = true;
-    }
-    if (keys['arrowright'] || keys['d']) {
-        nextX += player.speed;
-        player.currentDirection = directions.right;
-        player.moving = true;
+    // Determine movement vector
+    let dx = 0, dy = 0;
+    if (keys['arrowup'] || keys['w']) { dy -= 1; player.currentDirection = directions.up; }
+    if (keys['arrowdown'] || keys['s']) { dy += 1; player.currentDirection = directions.down; }
+    if (keys['arrowleft'] || keys['a']) { dx -= 1; player.currentDirection = directions.left; }
+    if (keys['arrowright'] || keys['d']) { dx += 1; player.currentDirection = directions.right; }
+
+    // Normalize diagonal movement
+    if (dx !== 0 || dy !== 0) {
+      player.moving = true;
+      const length = Math.sqrt(dx * dx + dy * dy);
+      dx = (dx / length) * player.speed;
+      dy = (dy / length) * player.speed;
     }
 
-    let blocked = false;
-    for (const wall of walls) {
-      if (wall.collidable && isColliding(nextX, nextY, player.width, player.height, wall)) {
-        blocked = true;
-        break;
-      }
-    }
+    nextX += dx;
+    nextY += dy;
 
+    // Collision detection
+    let blocked = walls.some(wall => wall.collidable && isColliding(nextX, nextY, player.width, player.height, wall));
+
+    // Animation frame update
     if (player.moving) {
-        //moving animation continues regardless
-        frameTimer += elapsed;
-        if (frameTimer > frameDuration) {
-            frameTimer = 0;
-            currentFrame = (currentFrame + 1) % frameCount;
-        }
-
-        //doesnt move if blocked by wall or sum
-        if (!blocked) {
-            player.x = nextX;
-            player.y = nextY;
-        }
-    } else {
+      frameTimer += elapsed;
+      if (frameTimer > frameDuration) {
         frameTimer = 0;
-        currentFrame = 0;
+        currentFrame = (currentFrame + 1) % frameCount;
+      }
+      if (!blocked) {
+        player.x = nextX;
+        player.y = nextY;
+      }
+    } else {
+      frameTimer = 0;
+      currentFrame = 0;
     }
-
   }
 
-
+  /*** =========
+   * DRAW FUNCTIONS
+   * ========= */
   function drawPlayer(ctx) {
     ctx.drawImage(
-        spriteSheet,
-        currentFrame * frameWidth,
-        player.currentDirection * frameHeight,
-        frameWidth,
-        frameHeight,
-        player.x,
-        player.y,
-        player.width,
-        player.height
+      spriteSheet,
+      currentFrame * frameWidth,
+      player.currentDirection * frameHeight,
+      frameWidth,
+      frameHeight,
+      player.x,
+      player.y,
+      player.width,
+      player.height
     );
-   }
+  }
+
+  function drawHUD(ctx) {
+    ctx.fillStyle = '#fff';
+    ctx.font = '14px monospace';
+    ctx.fillText(`X: ${Math.floor(player.x)}, Y: ${Math.floor(player.y)}`, 10, 20);
+    ctx.fillText(`Dir: ${Object.keys(directions).find(k => directions[k] === player.currentDirection)}`, 10, 40);
+    ctx.fillText(`Paused: ${paused}`, 10, 60);
+  }
+
+  function drawDebug(ctx) {
+    ctx.strokeStyle = 'red';
+    for (const wall of walls) {
+      ctx.strokeRect(wall.x, wall.y, wall.width, wall.height);
+    }
+  }
 
   function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -201,10 +200,26 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     drawPlayer(ctx);
+    drawHUD(ctx);
+
+    if (debugMode) drawDebug(ctx);
 
     ctx.fillStyle = '#fff';
     ctx.font = '16px sans-serif';
     ctx.fillText('Press E to open/close door', 10, canvas.height - 10);
+  }
+
+  /*** =========
+   * GAME LOOP
+   * ========= */
+  function update() {
+    let now = Date.now();
+    let elapsed = now - lastTime;
+    lastTime = now;
+
+    if (!paused) {
+      movePlayer(elapsed);
+    }
   }
 
   function gameLoop() {
@@ -214,4 +229,5 @@ window.addEventListener('DOMContentLoaded', () => {
   }
 
   gameLoop();
+
 });
