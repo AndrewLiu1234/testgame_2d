@@ -200,7 +200,7 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     drawPlayer(ctx);
-    drawHUD(ctx);
+    //drawHUD(ctx);
 
     if (debugMode) drawDebug(ctx);
 
