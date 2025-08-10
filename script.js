@@ -154,7 +154,7 @@ window.addEventListener('DOMContentLoaded', () => {
       }
     }
 
-    if (moving) {
+    if (player.moving) {
         //moving animation continues regardless
         frameTimer += elapsed;
         if (frameTimer > frameDuration) {
