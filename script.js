@@ -31,7 +31,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
   // Load player image sprite
   const playerImg = new Image();
-  playerImg.src = 'towerup.png'; // Put your uploaded PNG file path here
+  playerImg.src = 'pics/towerup.png'; // Put your uploaded PNG file path here
 
   // Walls and door setup (same as before)
   const doorHeight = 60;
