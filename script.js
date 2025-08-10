@@ -198,7 +198,7 @@ window.addEventListener('DOMContentLoaded', () => {
       wall.draw(ctx);
     }
 
-    drawPlayer();
+    drawPlayer(ctx);
 
     ctx.fillStyle = '#fff';
     ctx.font = '16px sans-serif';
