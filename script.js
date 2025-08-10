@@ -65,7 +65,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
 
   // SET UP WALLS/BORDERS
-  const doorHeight = 60;
+  const doorHeight = 100;
   const doorY = canvas.height / 2 - doorHeight / 2;
 
   const wallTop = new Wall(200, 0, 20, doorY);
