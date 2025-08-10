@@ -26,7 +26,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
   //PICTURE UPLOAD
   const spriteSheet = new Image();
-  spriteSheet.src = 'pics/spritesheet.png'; // Your uploaded file path
+  spriteSheet.src = 'spritesheet.png'; // Your uploaded file path
   //const playerImg = new Image();
   //playerImg.src = 'pics/towerup.png'; // Put your uploaded PNG file path here
    
