@@ -26,7 +26,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
   //PICTURE UPLOAD
   const spriteSheet = new Image();
-  spriteSheet.src = 'spritesheet.png'; // Your uploaded file path
+  spriteSheet.src = 'pics/spritesheet.png'; // Your uploaded file path
   //const playerImg = new Image();
   //playerImg.src = 'pics/towerup.png'; // Put your uploaded PNG file path here
    
@@ -44,7 +44,7 @@ window.addEventListener('DOMContentLoaded', () => {
   };
 
    let currentFrame = 0;
-   let currentDirection = directions.down; // default facing down
+   //let currentDirection = directions.down; // default facing down
    let lastTime = Date.now();
 
    let frameTimer = 0;
@@ -58,6 +58,7 @@ window.addEventListener('DOMContentLoaded', () => {
     width: frameWidth,
     height: frameHeight,
     speed: 2,
+    currentDirection: directions.down,
     moving: false,
    };
 
@@ -122,27 +123,27 @@ window.addEventListener('DOMContentLoaded', () => {
 
     let nextX = player.x;
     let nextY = player.y;
-    let moving = false;
+    player.moving = false;
 
     if (keys['arrowup'] || keys['w']) {
         nextY -= player.speed;
         player.currentDirection = directions.up;
-        moving = true;
+        player.moving = true;
     }
     if (keys['arrowdown'] || keys['s']) {
         nextY += player.speed;
         player.currentDirection = directions.down;
-        moving = true;
+        player.moving = true;
     }
     if (keys['arrowleft'] || keys['a']) {
         nextX -= player.speed;
         player.currentDirection = directions.left;
-        moving = true;
+        player.moving = true;
     }
     if (keys['arrowright'] || keys['d']) {
         nextX += player.speed;
         player.currentDirection = directions.right;
-        moving = true;
+        player.moving = true;
     }
 
     let blocked = false;
