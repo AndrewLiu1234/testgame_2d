@@ -38,10 +38,10 @@ window.addEventListener('DOMContentLoaded', () => {
 
   const frameCount = 9;  // number of frames per row (columns)
   const directions = {
-    down: 0,
+    up: 0,
     left: 1,
-    right: 2,
-    up: 3
+    down: 2,
+    right: 3,
   };
 
    let currentFrame = 0;
