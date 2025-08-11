@@ -1,7 +1,4 @@
 window.addEventListener('DOMContentLoaded', () => {
-  /*** =========
-   * CANVAS SETUP
-   * ========= */
   const canvas = document.getElementById('gameCanvas');
   const ctx = canvas.getContext('2d');
 
@@ -60,11 +57,9 @@ window.addEventListener('DOMContentLoaded', () => {
       this.directions = directions;
       this.currentDirection = directions.down;
       this.moving = false;
-
-      // Animation
       this.currentFrame = 0;
       this.frameTimer = 0;
-      this.frameDuration = 100; // ms per frame
+      this.frameDuration = 100;
     }
 
     isColliding(px, py, pw, ph, obj) {
@@ -131,6 +126,34 @@ window.addEventListener('DOMContentLoaded', () => {
   }
 
   /*** =========
+   * NPC CLASS
+   * ========= */
+  class NPC {
+    constructor(x, y, color, name, dialogue) {
+      this.x = x;
+      this.y = y;
+      this.width = 40;
+      this.height = 40;
+      this.color = color;
+      this.name = name;
+      this.dialogue = dialogue; // array of strings
+    }
+    draw(ctx) {
+      ctx.fillStyle = this.color;
+      ctx.fillRect(this.x, this.y, this.width, this.height);
+    }
+    getRandomLine() {
+      const index = Math.floor(Math.random() * this.dialogue.length);
+      return this.dialogue[index];
+    }
+    isNear(player, range = 50) {
+      const dx = player.x - this.x;
+      const dy = player.y - this.y;
+      return Math.sqrt(dx * dx + dy * dy) < range;
+    }
+  }
+
+  /*** =========
    * SPRITE SETUP
    * ========= */
   const spriteSheet = new Image();
@@ -150,11 +173,9 @@ window.addEventListener('DOMContentLoaded', () => {
    * ========= */
   const doorHeight = 100;
   const doorY = canvas.height / 2 - doorHeight / 2;
-
   const wallTop = new Wall(200, 0, 20, doorY);
   const wallBottom = new Wall(200, doorY + doorHeight, 20, canvas.height - (doorY + doorHeight));
   const door = new Door(200, doorY, 20, doorHeight);
-
   const wallLeft = new Wall(0, 0, 10, canvas.height);
   const wallRight = new Wall(canvas.width - 10, 0, 10, canvas.height);
   const wallTopEdge = new Wall(0, 0, canvas.width, 10);
@@ -163,11 +184,28 @@ window.addEventListener('DOMContentLoaded', () => {
   const walls = [wallTop, wallBottom, door, wallLeft, wallRight, wallTopEdge, wallBottomEdge];
 
   /*** =========
+   * NPC INSTANCES
+   * ========= */
+  const npcs = [
+    new NPC(300, 150, '#0088ff', 'Professor Quirk', [
+      "Did you know I once taught a rock to whistle?",
+      "The moon is just Earth's hat.",
+      "I’m allergic to Tuesdays.",
+    ]),
+    new NPC(100, 300, '#ff00aa', 'Ms. Noodle', [
+      "Spaghetti is just long bread if you think about it.",
+      "I own seventeen identical hats.",
+      "Bananas are just upside-down moons.",
+    ])
+  ];
+
+  /*** =========
    * INPUT
    * ========= */
   const keys = {};
   let paused = false;
   let debugMode = false;
+  let currentDialogue = null; // {name, text}
 
   document.addEventListener('keydown', e => {
     const key = e.key.toLowerCase();
@@ -181,6 +219,16 @@ window.addEventListener('DOMContentLoaded', () => {
     }
     if (key === 't') {
       debugMode = !debugMode;
+    }
+    if (key === 'f') {
+      // talk to nearest NPC if in range
+      const nearby = npcs.find(npc => npc.isNear(player));
+      if (nearby) {
+        currentDialogue = {
+          name: nearby.name,
+          text: nearby.getRandomLine()
+        };
+      }
     }
   });
 
@@ -198,19 +246,36 @@ window.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  function drawDialogueBox(ctx, name, text) {
+    const boxHeight = 80;
+    ctx.fillStyle = 'rgba(0,0,0,0.7)';
+    ctx.fillRect(0, canvas.height - boxHeight, canvas.width, boxHeight);
+    ctx.fillStyle = '#fff';
+    ctx.font = '14px monospace';
+    ctx.fillText(`${name}: ${text}`, 10, canvas.height - boxHeight + 25);
+  }
+
   function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.fillStyle = '#666';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     walls.forEach(wall => wall.draw(ctx));
+    npcs.forEach(npc => npc.draw(ctx));
     player.draw(ctx);
 
-    if (debugMode) drawDebug(ctx);
+    // Show "Press F" when near NPC
+    const nearby = npcs.find(npc => npc.isNear(player));
+    if (nearby && !currentDialogue) {
+      ctx.fillStyle = '#fff';
+      ctx.font = '14px sans-serif';
+      ctx.fillText(`Press F to talk to ${nearby.name}`, 10, 20);
+    }
 
-    ctx.fillStyle = '#fff';
-    ctx.font = '16px sans-serif';
-    ctx.fillText('Press E to open/close door', 10, canvas.height - 10);
+    if (debugMode) drawDebug(ctx);
+    if (currentDialogue) {
+      drawDialogueBox(ctx, currentDialogue.name, currentDialogue.text);
+    }
   }
 
   /*** =========
