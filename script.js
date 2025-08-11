@@ -1,5 +1,4 @@
 window.addEventListener('DOMContentLoaded', () => {
-
   /*** =========
    * CANVAS SETUP
    * ========= */
@@ -7,7 +6,7 @@ window.addEventListener('DOMContentLoaded', () => {
   const ctx = canvas.getContext('2d');
 
   /*** =========
-   * CLASSES
+   * WALL CLASS
    * ========= */
   class Wall {
     constructor(x, y, width, height, color = '#333', collidable = true) {
@@ -28,33 +27,123 @@ window.addEventListener('DOMContentLoaded', () => {
   }
 
   /*** =========
+   * DOOR CLASS
+   * ========= */
+  class Door extends Wall {
+    constructor(x, y, width, height, closedColor = '#884400', openColor = '#555') {
+      super(x, y, width, height, closedColor, true);
+      this.closedColor = closedColor;
+      this.openColor = openColor;
+      this.open = false;
+    }
+    toggle() {
+      this.open = !this.open;
+      this.setCollidable(!this.open);
+      this.color = this.open ? this.openColor : this.closedColor;
+    }
+  }
+
+  /*** =========
+   * PLAYER CLASS
+   * ========= */
+  class Player {
+    constructor(x, y, speed, spriteSheet, frameWidth, frameHeight, frameCount, directions) {
+      this.x = x;
+      this.y = y;
+      this.width = frameWidth;
+      this.height = frameHeight;
+      this.speed = speed;
+      this.spriteSheet = spriteSheet;
+      this.frameWidth = frameWidth;
+      this.frameHeight = frameHeight;
+      this.frameCount = frameCount;
+      this.directions = directions;
+      this.currentDirection = directions.down;
+      this.moving = false;
+
+      // Animation
+      this.currentFrame = 0;
+      this.frameTimer = 0;
+      this.frameDuration = 100; // ms per frame
+    }
+
+    isColliding(px, py, pw, ph, obj) {
+      return (
+        px < obj.x + obj.width &&
+        px + pw > obj.x &&
+        py < obj.y + obj.height &&
+        py + ph > obj.y
+      );
+    }
+
+    move(elapsed, keys, walls) {
+      let nextX = this.x;
+      let nextY = this.y;
+      this.moving = false;
+
+      let dx = 0, dy = 0;
+      if (keys['arrowup'] || keys['w']) { dy -= 1; this.currentDirection = this.directions.up; }
+      if (keys['arrowdown'] || keys['s']) { dy += 1; this.currentDirection = this.directions.down; }
+      if (keys['arrowleft'] || keys['a']) { dx -= 1; this.currentDirection = this.directions.left; }
+      if (keys['arrowright'] || keys['d']) { dx += 1; this.currentDirection = this.directions.right; }
+
+      if (dx !== 0 || dy !== 0) {
+        this.moving = true;
+        const length = Math.sqrt(dx * dx + dy * dy);
+        dx = (dx / length) * this.speed;
+        dy = (dy / length) * this.speed;
+      }
+
+      nextX += dx;
+      nextY += dy;
+
+      const blocked = walls.some(wall => wall.collidable && this.isColliding(nextX, nextY, this.width, this.height, wall));
+
+      if (this.moving) {
+        this.frameTimer += elapsed;
+        if (this.frameTimer > this.frameDuration) {
+          this.frameTimer = 0;
+          this.currentFrame = (this.currentFrame + 1) % this.frameCount;
+        }
+        if (!blocked) {
+          this.x = nextX;
+          this.y = nextY;
+        }
+      } else {
+        this.frameTimer = 0;
+        this.currentFrame = 0;
+      }
+    }
+
+    draw(ctx) {
+      ctx.drawImage(
+        this.spriteSheet,
+        this.currentFrame * this.frameWidth,
+        this.currentDirection * this.frameHeight,
+        this.frameWidth,
+        this.frameHeight,
+        this.x,
+        this.y,
+        this.width,
+        this.height
+      );
+    }
+  }
+
+  /*** =========
    * SPRITE SETUP
    * ========= */
   const spriteSheet = new Image();
   spriteSheet.src = 'pics/spritesheet.png';
-
   const frameWidth = 64;
   const frameHeight = 64;
   const frameCount = 9;
   const directions = { up: 0, left: 1, down: 2, right: 3 };
 
-  let currentFrame = 0;
-  let lastTime = Date.now();
-  let frameTimer = 0;
-  const frameDuration = 100; // ms per frame
-
   /*** =========
-   * PLAYER SETUP
+   * PLAYER INSTANCE
    * ========= */
-  const player = {
-    x: 50,
-    y: 50,
-    width: frameWidth,
-    height: frameHeight,
-    speed: 2,
-    currentDirection: directions.down,
-    moving: false,
-  };
+  const player = new Player(50, 50, 2, spriteSheet, frameWidth, frameHeight, frameCount, directions);
 
   /*** =========
    * WALLS & DOOR
@@ -64,8 +153,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
   const wallTop = new Wall(200, 0, 20, doorY);
   const wallBottom = new Wall(200, doorY + doorHeight, 20, canvas.height - (doorY + doorHeight));
-  const door = new Wall(200, doorY, 20, doorHeight, '#884400', true);
-  door.open = false;
+  const door = new Door(200, doorY, 20, doorHeight);
 
   const wallLeft = new Wall(0, 0, 10, canvas.height);
   const wallRight = new Wall(canvas.width - 10, 0, 10, canvas.height);
@@ -75,7 +163,7 @@ window.addEventListener('DOMContentLoaded', () => {
   const walls = [wallTop, wallBottom, door, wallLeft, wallRight, wallTopEdge, wallBottomEdge];
 
   /*** =========
-   * INPUT HANDLING
+   * INPUT
    * ========= */
   const keys = {};
   let paused = false;
@@ -85,15 +173,13 @@ window.addEventListener('DOMContentLoaded', () => {
     const key = e.key.toLowerCase();
     keys[key] = true;
 
-    if (key === 'e') { // toggle door
-      door.open = !door.open;
-      door.setCollidable(!door.open);
-      door.color = door.open ? '#555' : '#884400';
+    if (key === 'e') {
+      door.toggle();
     }
-    if (key === 'p') { // pause game
+    if (key === 'p') {
       paused = !paused;
     }
-    if (key === 't') { // toggle debug mode
+    if (key === 't') {
       debugMode = !debugMode;
     }
   });
@@ -103,85 +189,8 @@ window.addEventListener('DOMContentLoaded', () => {
   });
 
   /*** =========
-   * HELPER FUNCTIONS
+   * DRAW
    * ========= */
-  function isColliding(px, py, pw, ph, obj) {
-    return (
-      px < obj.x + obj.width &&
-      px + pw > obj.x &&
-      py < obj.y + obj.height &&
-      py + ph > obj.y
-    );
-  }
-
-  function movePlayer(elapsed) {
-    let nextX = player.x;
-    let nextY = player.y;
-    player.moving = false;
-
-    // Determine movement vector
-    let dx = 0, dy = 0;
-    if (keys['arrowup'] || keys['w']) { dy -= 1; player.currentDirection = directions.up; }
-    if (keys['arrowdown'] || keys['s']) { dy += 1; player.currentDirection = directions.down; }
-    if (keys['arrowleft'] || keys['a']) { dx -= 1; player.currentDirection = directions.left; }
-    if (keys['arrowright'] || keys['d']) { dx += 1; player.currentDirection = directions.right; }
-
-    // Normalize diagonal movement
-    if (dx !== 0 || dy !== 0) {
-      player.moving = true;
-      const length = Math.sqrt(dx * dx + dy * dy);
-      dx = (dx / length) * player.speed;
-      dy = (dy / length) * player.speed;
-    }
-
-    nextX += dx;
-    nextY += dy;
-
-    // Collision detection
-    let blocked = walls.some(wall => wall.collidable && isColliding(nextX, nextY, player.width, player.height, wall));
-
-    // Animation frame update
-    if (player.moving) {
-      frameTimer += elapsed;
-      if (frameTimer > frameDuration) {
-        frameTimer = 0;
-        currentFrame = (currentFrame + 1) % frameCount;
-      }
-      if (!blocked) {
-        player.x = nextX;
-        player.y = nextY;
-      }
-    } else {
-      frameTimer = 0;
-      currentFrame = 0;
-    }
-  }
-
-  /*** =========
-   * DRAW FUNCTIONS
-   * ========= */
-  function drawPlayer(ctx) {
-    ctx.drawImage(
-      spriteSheet,
-      currentFrame * frameWidth,
-      player.currentDirection * frameHeight,
-      frameWidth,
-      frameHeight,
-      player.x,
-      player.y,
-      player.width,
-      player.height
-    );
-  }
-
-  function drawHUD(ctx) {
-    ctx.fillStyle = '#fff';
-    ctx.font = '14px monospace';
-    ctx.fillText(`X: ${Math.floor(player.x)}, Y: ${Math.floor(player.y)}`, 10, 20);
-    ctx.fillText(`Dir: ${Object.keys(directions).find(k => directions[k] === player.currentDirection)}`, 10, 40);
-    ctx.fillText(`Paused: ${paused}`, 10, 60);
-  }
-
   function drawDebug(ctx) {
     ctx.strokeStyle = 'red';
     for (const wall of walls) {
@@ -191,16 +200,11 @@ window.addEventListener('DOMContentLoaded', () => {
 
   function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-
     ctx.fillStyle = '#666';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    for (const wall of walls) {
-      wall.draw(ctx);
-    }
-
-    drawPlayer(ctx);
-    //drawHUD(ctx);
+    walls.forEach(wall => wall.draw(ctx));
+    player.draw(ctx);
 
     if (debugMode) drawDebug(ctx);
 
@@ -210,15 +214,16 @@ window.addEventListener('DOMContentLoaded', () => {
   }
 
   /*** =========
-   * GAME LOOP
+   * LOOP
    * ========= */
+  let lastTime = Date.now();
   function update() {
-    let now = Date.now();
-    let elapsed = now - lastTime;
+    const now = Date.now();
+    const elapsed = now - lastTime;
     lastTime = now;
 
     if (!paused) {
-      movePlayer(elapsed);
+      player.move(elapsed, keys, walls);
     }
   }
 
@@ -229,5 +234,4 @@ window.addEventListener('DOMContentLoaded', () => {
   }
 
   gameLoop();
-
 });
