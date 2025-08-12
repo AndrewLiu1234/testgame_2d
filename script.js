@@ -118,14 +118,15 @@ window.addEventListener('DOMContentLoaded', () => {
   }
 
   class NPC {
-    constructor(x, y, width, height, color, name, dialogue) {
+    constructor(x, y, width, height, color, name, dialogueLines) {
       this.x = x;
       this.y = y;
       this.width = width;
       this.height = height;
       this.color = color;
       this.name = name;
-      this.dialogue = dialogue;
+      this.dialogueLines = dialogueLines;
+      this.dialogueIndex = 0;
     }
     draw(ctx) {
       ctx.fillStyle = this.color;
@@ -135,6 +136,11 @@ window.addEventListener('DOMContentLoaded', () => {
       const dx = player.x + player.width/2 - (this.x + this.width/2);
       const dy = player.y + player.height/2 - (this.y + this.height/2);
       return Math.sqrt(dx*dx + dy*dy) < range;
+    }
+    getNextDialogue() {
+      const text = `${this.name}: ${this.dialogueLines[this.dialogueIndex]}`;
+      this.dialogueIndex = (this.dialogueIndex + 1) % this.dialogueLines.length;
+      return text;
     }
   }
 
@@ -162,9 +168,21 @@ window.addEventListener('DOMContentLoaded', () => {
   const walls = [wallTop, wallBottom, door, wallLeft, wallRight, wallTopEdge, wallBottomEdge];
 
   const npcs = [
-    new NPC(300, 100, 32, 48, 'purple', 'Professor Quirk', "I swear these rocks are whispering secrets."),
-    new NPC(100, 300, 20, 60, 'orange', 'Ms. Noodle', "Spaghetti is the key to life, trust me!"),
-    new NPC(450, 350, 32, 48, 'crimson', 'Captain Zoom', "Speed is everything, but where’s my spaceship?")
+    new NPC(300, 100, 32, 48, 'purple', 'Professor Quirk', [
+      "I swear these rocks are whispering secrets.",
+      "Last night, I heard them plotting a heist.",
+      "Do you think I'm losing it? Maybe..."
+    ]),
+    new NPC(100, 300, 32, 48, 'orange', 'Ms. Noodle', [
+      "Spaghetti is the key to life, trust me!",
+      "Linguine? Overrated.",
+      "Macaroni knows all my secrets."
+    ]),
+    new NPC(450, 350, 32, 48, 'crimson', 'Captain Zoom', [
+      "Speed is everything, but where’s my spaceship?",
+      "It was here a second ago...",
+      "Do you think the rocks took it?"
+    ])
   ];
 
   const keys = {};
@@ -203,11 +221,10 @@ window.addEventListener('DOMContentLoaded', () => {
     if (key === 'enter') {
       if (nearbyNPC && !activeNPC) {
         activeNPC = nearbyNPC;
-        dialogueText.textContent = `${activeNPC.name}: ${activeNPC.dialogue}`;
+        dialogueText.textContent = activeNPC.getNextDialogue();
         dialogueBox.style.display = 'block';
       } else if (activeNPC) {
-        activeNPC = null;
-        dialogueBox.style.display = 'none';
+        dialogueText.textContent = activeNPC.getNextDialogue();
       }
     }
   });
@@ -238,7 +255,6 @@ window.addEventListener('DOMContentLoaded', () => {
     ctx.font = '16px sans-serif';
     ctx.fillText('Press E to open/close door | P to pause | T to toggle debug', 10, canvas.height - 10);
 
-    // Interaction hint
     if (nearbyNPC && !activeNPC) {
       interactionHint.style.display = 'block';
     } else {
