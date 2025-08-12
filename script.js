@@ -1,13 +1,7 @@
 window.addEventListener('DOMContentLoaded', () => {
-  /*** =========
-   * CANVAS SETUP
-   * ========= */
   const canvas = document.getElementById('gameCanvas');
   const ctx = canvas.getContext('2d');
 
-  /*** =========
-   * WALL CLASS
-   * ========= */
   class Wall {
     constructor(x, y, width, height, color = '#333', collidable = true) {
       this.x = x;
@@ -26,9 +20,6 @@ window.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  /*** =========
-   * DOOR CLASS
-   * ========= */
   class Door extends Wall {
     constructor(x, y, width, height, closedColor = '#884400', openColor = '#555') {
       super(x, y, width, height, closedColor, true);
@@ -43,9 +34,6 @@ window.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  /*** =========
-   * PLAYER CLASS
-   * ========= */
   class Player {
     constructor(x, y, speed, spriteSheet, frameWidth, frameHeight, frameCount, directions) {
       this.x = x;
@@ -63,7 +51,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
       this.currentFrame = 0;
       this.frameTimer = 0;
-      this.frameDuration = 100; // ms per frame
+      this.frameDuration = 100;
     }
 
     isColliding(px, py, pw, ph, obj) {
@@ -129,9 +117,6 @@ window.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  /*** =========
-   * NPC CLASS
-   * ========= */
   class NPC {
     constructor(x, y, width, height, color, name, dialogue) {
       this.x = x;
@@ -153,9 +138,6 @@ window.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  /*** =========
-   * SPRITE SETUP
-   * ========= */
   const spriteSheet = new Image();
   spriteSheet.src = 'pics/spritesheet.png';
   const frameWidth = 64;
@@ -163,14 +145,8 @@ window.addEventListener('DOMContentLoaded', () => {
   const frameCount = 9;
   const directions = { up: 0, left: 1, down: 2, right: 3 };
 
-  /*** =========
-   * PLAYER INSTANCE
-   * ========= */
   const player = new Player(50, 50, 2, spriteSheet, frameWidth, frameHeight, frameCount, directions);
 
-  /*** =========
-   * WALLS & DOOR
-   * ========= */
   const doorHeight = 100;
   const doorY = canvas.height / 2 - doorHeight / 2;
 
@@ -185,34 +161,54 @@ window.addEventListener('DOMContentLoaded', () => {
 
   const walls = [wallTop, wallBottom, door, wallLeft, wallRight, wallTopEdge, wallBottomEdge];
 
-  /*** =========
-   * NPCS
-   * ========= */
   const npcs = [
     new NPC(300, 100, 32, 48, 'purple', 'Professor Quirk', "I swear these rocks are whispering secrets."),
-    new NPC(100, 300, 32, 48, 'orange', 'Ms. Noodle', "Spaghetti is the key to life, trust me!"),
+    new NPC(100, 300, 20, 60, 'orange', 'Ms. Noodle', "Spaghetti is the key to life, trust me!"),
     new NPC(450, 350, 32, 48, 'crimson', 'Captain Zoom', "Speed is everything, but where’s my spaceship?")
   ];
 
-  /*** =========
-   * INPUT HANDLING
-   * ========= */
   const keys = {};
   let paused = false;
   let debugMode = false;
+
+  const dialogueBox = document.getElementById('dialogueBox');
+  const dialogueText = document.getElementById('dialogueText');
+  const interactionHint = document.getElementById('interactionHint');
+
+  let activeNPC = null;
+  let nearbyNPC = null;
+
+  function checkNpcProximity() {
+    nearbyNPC = null;
+    for (const npc of npcs) {
+      if (npc.isNear(player)) {
+        nearbyNPC = npc;
+        break;
+      }
+    }
+    if (!nearbyNPC && activeNPC) {
+      activeNPC = null;
+      dialogueBox.style.display = 'none';
+    }
+  }
 
   document.addEventListener('keydown', e => {
     const key = e.key.toLowerCase();
     keys[key] = true;
 
-    if (key === 'e') {
-      door.toggle();
-    }
-    if (key === 'p') {
-      paused = !paused;
-    }
-    if (key === 't') {
-      debugMode = !debugMode;
+    if (key === 'e') door.toggle();
+    if (key === 'p') paused = !paused;
+    if (key === 't') debugMode = !debugMode;
+
+    if (key === 'enter') {
+      if (nearbyNPC && !activeNPC) {
+        activeNPC = nearbyNPC;
+        dialogueText.textContent = `${activeNPC.name}: ${activeNPC.dialogue}`;
+        dialogueBox.style.display = 'block';
+      } else if (activeNPC) {
+        activeNPC = null;
+        dialogueBox.style.display = 'none';
+      }
     }
   });
 
@@ -220,41 +216,6 @@ window.addEventListener('DOMContentLoaded', () => {
     keys[e.key.toLowerCase()] = false;
   });
 
-  /*** =========
-   * DIALOGUE BOX ELEMENTS
-   * ========= */
-  const dialogueBox = document.getElementById('dialogueBox');
-  const dialogueText = document.getElementById('dialogueText');
-
-  /*** =========
-   * CHECK NPC PROXIMITY & SHOW/HIDE DIALOGUE
-   * ========= */
-  let activeNPC = null;
-
-  function checkNpcDialogue() {
-    let nearbyNPC = null;
-    for (const npc of npcs) {
-      if (npc.isNear(player)) {
-        nearbyNPC = npc;
-        break;
-      }
-    }
-
-    if (nearbyNPC) {
-      if (activeNPC !== nearbyNPC) {
-        activeNPC = nearbyNPC;
-        dialogueText.textContent = `${activeNPC.name}: ${activeNPC.dialogue}`;
-        dialogueBox.style.display = 'block';
-      }
-    } else {
-      activeNPC = null;
-      dialogueBox.style.display = 'none';
-    }
-  }
-
-  /*** =========
-   * DRAW DEBUG
-   * ========= */
   function drawDebug(ctx) {
     ctx.strokeStyle = 'red';
     for (const wall of walls) {
@@ -262,12 +223,8 @@ window.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  /*** =========
-   * DRAW FUNCTION
-   * ========= */
   function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-
     ctx.fillStyle = '#666';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -280,11 +237,15 @@ window.addEventListener('DOMContentLoaded', () => {
     ctx.fillStyle = '#fff';
     ctx.font = '16px sans-serif';
     ctx.fillText('Press E to open/close door | P to pause | T to toggle debug', 10, canvas.height - 10);
+
+    // Interaction hint
+    if (nearbyNPC && !activeNPC) {
+      interactionHint.style.display = 'block';
+    } else {
+      interactionHint.style.display = 'none';
+    }
   }
 
-  /*** =========
-   * GAME LOOP
-   * ========= */
   let lastTime = Date.now();
   function update() {
     const now = Date.now();
@@ -294,8 +255,7 @@ window.addEventListener('DOMContentLoaded', () => {
     if (!paused) {
       player.move(elapsed, keys, walls);
     }
-
-    checkNpcDialogue();
+    checkNpcProximity();
   }
 
   function gameLoop() {
