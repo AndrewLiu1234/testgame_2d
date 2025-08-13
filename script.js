@@ -133,7 +133,8 @@ window.addEventListener('DOMContentLoaded', () => {
       this.frameWidth = null; // will be set when image loads
       this.frameHeight = null;
       this.frameCount = cols; // talking animation frames across one row
-      this.currentFrame = 0;
+      this.currentFrameX = 0;
+      this.currentFrameY = 0;
       this.frameTimer = 0;
       this.frameInterval = 200;
       this.talking = false;
@@ -159,18 +160,25 @@ window.addEventListener('DOMContentLoaded', () => {
 
     stopTalking() {
       this.talking = false;
-      this.currentFrame = 0;
+      this.currentFrameX = 0;
+      this.currentFrameY = 0;
     }
 
     update(deltaTime) {
       if (this.talking && this.frameWidth && this.frameHeight) {
         this.frameTimer += deltaTime;
         if (this.frameTimer >= this.frameInterval) {
-          this.currentFrame = (this.currentFrame + 1) % this.frameCount;
+          //this.currentFrame = (this.currentFrame + 1) % this.frameCount;
+          this.currentFrameX++;
+          if (this.currentFrameX >= this.cols) {
+            this.currentFrameX = 0;
+            this.currentFrameY = (this.currentFrameY + 1) % this.rows;
+          }
           this.frameTimer = 0;
         }
       } else {
-        this.currentFrame = 0;
+        this.currentFrameX = 0;
+        this.currentFrameY = 0;
       }
     }
 
@@ -178,7 +186,7 @@ window.addEventListener('DOMContentLoaded', () => {
       if (!this.frameWidth || !this.frameHeight) return;
       ctx.drawImage(
         this.spriteSheet,
-        this.currentFrame * this.frameWidth, 0,
+        this.currentFrameX * this.frameWidth, this.currentFrameY * this.frameHeight,
         this.frameWidth, this.frameHeight,
         this.x, this.y,
         this.frameWidth, this.frameHeight
