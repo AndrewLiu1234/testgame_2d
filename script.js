@@ -118,30 +118,35 @@ window.addEventListener('DOMContentLoaded', () => {
   }
 
   class NPC {
-    constructor(x, y, spriteSrc, frameWidth, frameHeight, frameCount, name, dialogueLines) {
+    constructor(x, y, spriteSrc, rows, cols, name, dialogueLines) {
       this.x = x;
       this.y = y;
-      this.width = frameWidth;
-      this.height = frameHeight;
+      this.rows = rows;
+      this.cols = cols;
       this.name = name;
       this.dialogueLines = dialogueLines;
       this.dialogueIndex = 0;
 
       this.spriteSheet = new Image();
       this.spriteSheet.src = spriteSrc;
-      this.frameWidth = frameWidth;
-      this.frameHeight = frameHeight;
-      this.frameCount = frameCount;
 
+      this.frameWidth = null; // will be set when image loads
+      this.frameHeight = null;
+      this.frameCount = cols; // talking animation frames across one row
       this.currentFrame = 0;
       this.frameTimer = 0;
       this.frameInterval = 200;
       this.talking = false;
+
+      this.spriteSheet.onload = () => {
+        this.frameWidth = this.spriteSheet.width / this.cols;
+        this.frameHeight = this.spriteSheet.height / this.rows;
+      };
     }
 
     isNear(player, range = 70) {
-      const dx = player.x + player.width / 2 - (this.x + this.width / 2);
-      const dy = player.y + player.height / 2 - (this.y + this.height / 2);
+      const dx = player.x + player.width / 2 - (this.x + (this.frameWidth || 0) / 2);
+      const dy = player.y + player.height / 2 - (this.y + (this.frameHeight || 0) / 2);
       return Math.sqrt(dx * dx + dy * dy) < range;
     }
 
@@ -158,7 +163,7 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     update(deltaTime) {
-      if (this.talking) {
+      if (this.talking && this.frameWidth && this.frameHeight) {
         this.frameTimer += deltaTime;
         if (this.frameTimer >= this.frameInterval) {
           this.currentFrame = (this.currentFrame + 1) % this.frameCount;
@@ -170,12 +175,13 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     draw(ctx) {
+      if (!this.frameWidth || !this.frameHeight) return;
       ctx.drawImage(
         this.spriteSheet,
         this.currentFrame * this.frameWidth, 0,
         this.frameWidth, this.frameHeight,
         this.x, this.y,
-        this.width, this.height
+        this.frameWidth, this.frameHeight
       );
     }
   }
@@ -203,19 +209,18 @@ window.addEventListener('DOMContentLoaded', () => {
 
   const walls = [wallTop, wallBottom, door, wallLeft, wallRight, wallTopEdge, wallBottomEdge];
 
-  // Updated NPCs with spritesheet sources
   const npcs = [
-    new NPC(300, 100, 'pics/npcSprites/captainZoom.png', 32, 32, 4, 'Professor Quirk', [
+    new NPC(300, 100, 'pics/npcSprites/captainZoom.png', 1, 4, 'Professor Quirk', [
       "I swear these rocks are whispering secrets.",
       "Last night, I heard them plotting a heist.",
       "Do you think I'm losing it? Maybe..."
     ]),
-    new NPC(100, 300, 'pics/npcSprites/captainZoom.png', 32, 32, 4, 'Ms. Noodle', [
+    new NPC(100, 300, 'pics/npcSprites/captainZoom.png', 1, 4, 'Ms. Noodle', [
       "Spaghetti is the key to life, trust me!",
       "Linguine? Overrated.",
       "Macaroni knows all my secrets."
     ]),
-    new NPC(450, 350, 'pics/npcSprites/captainZoom.png', 32, 32, 4, 'Captain Zoom', [
+    new NPC(450, 350, 'pics/npcSprites/captainZoom.png', 1, 4, 'Captain Zoom', [
       "Speed is everything, but where’s my spaceship?",
       "It was here a second ago...",
       "Do you think the rocks took it?"
@@ -284,16 +289,10 @@ window.addEventListener('DOMContentLoaded', () => {
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     walls.forEach(wall => wall.draw(ctx));
-
     npcs.forEach(npc => npc.draw(ctx));
-
     player.draw(ctx);
 
     if (debugMode) drawDebug(ctx);
-
-    ctx.fillStyle = '#fff';
-    ctx.font = '16px sans-serif';
-    ctx.fillText('Press E to open/close door | P to pause | T to toggle debug', 10, canvas.height - 10);
 
     if (nearbyNPC && !activeNPC) {
       interactionHint.style.display = 'block';
