@@ -118,29 +118,65 @@ window.addEventListener('DOMContentLoaded', () => {
   }
 
   class NPC {
-    constructor(x, y, width, height, color, name, dialogueLines) {
+    constructor(x, y, spriteSrc, frameWidth, frameHeight, frameCount, name, dialogueLines) {
       this.x = x;
       this.y = y;
-      this.width = width;
-      this.height = height;
-      this.color = color;
+      this.width = frameWidth;
+      this.height = frameHeight;
       this.name = name;
       this.dialogueLines = dialogueLines;
       this.dialogueIndex = 0;
+
+      this.spriteSheet = new Image();
+      this.spriteSheet.src = spriteSrc;
+      this.frameWidth = frameWidth;
+      this.frameHeight = frameHeight;
+      this.frameCount = frameCount;
+
+      this.currentFrame = 0;
+      this.frameTimer = 0;
+      this.frameInterval = 200;
+      this.talking = false;
     }
-    draw(ctx) {
-      ctx.fillStyle = this.color;
-      ctx.fillRect(this.x, this.y, this.width, this.height);
-    }
+
     isNear(player, range = 70) {
-      const dx = player.x + player.width/2 - (this.x + this.width/2);
-      const dy = player.y + player.height/2 - (this.y + this.height/2);
-      return Math.sqrt(dx*dx + dy*dy) < range;
+      const dx = player.x + player.width / 2 - (this.x + this.width / 2);
+      const dy = player.y + player.height / 2 - (this.y + this.height / 2);
+      return Math.sqrt(dx * dx + dy * dy) < range;
     }
+
     getNextDialogue() {
       const text = `${this.name}: ${this.dialogueLines[this.dialogueIndex]}`;
       this.dialogueIndex = (this.dialogueIndex + 1) % this.dialogueLines.length;
+      this.talking = true;
       return text;
+    }
+
+    stopTalking() {
+      this.talking = false;
+      this.currentFrame = 0;
+    }
+
+    update(deltaTime) {
+      if (this.talking) {
+        this.frameTimer += deltaTime;
+        if (this.frameTimer >= this.frameInterval) {
+          this.currentFrame = (this.currentFrame + 1) % this.frameCount;
+          this.frameTimer = 0;
+        }
+      } else {
+        this.currentFrame = 0;
+      }
+    }
+
+    draw(ctx) {
+      ctx.drawImage(
+        this.spriteSheet,
+        this.currentFrame * this.frameWidth, 0,
+        this.frameWidth, this.frameHeight,
+        this.x, this.y,
+        this.width, this.height
+      );
     }
   }
 
@@ -167,18 +203,19 @@ window.addEventListener('DOMContentLoaded', () => {
 
   const walls = [wallTop, wallBottom, door, wallLeft, wallRight, wallTopEdge, wallBottomEdge];
 
+  // Updated NPCs with spritesheet sources
   const npcs = [
-    new NPC(300, 100, 32, 48, 'purple', 'Professor Quirk', [
+    new NPC(300, 100, 'pics/npcSprites/captainZoom.png', 64, 64, 4, 'Professor Quirk', [
       "I swear these rocks are whispering secrets.",
       "Last night, I heard them plotting a heist.",
       "Do you think I'm losing it? Maybe..."
     ]),
-    new NPC(100, 300, 32, 48, 'orange', 'Ms. Noodle', [
+    new NPC(100, 300, 'pics/npcSprites/captainZoom.png', 64, 64, 4, 'Ms. Noodle', [
       "Spaghetti is the key to life, trust me!",
       "Linguine? Overrated.",
       "Macaroni knows all my secrets."
     ]),
-    new NPC(450, 350, 32, 48, 'crimson', 'Captain Zoom', [
+    new NPC(450, 350, 'pics/npcSprites/captainZoom.png', 64, 64, 4, 'Captain Zoom', [
       "Speed is everything, but where’s my spaceship?",
       "It was here a second ago...",
       "Do you think the rocks took it?"
@@ -205,6 +242,7 @@ window.addEventListener('DOMContentLoaded', () => {
       }
     }
     if (!nearbyNPC && activeNPC) {
+      activeNPC.stopTalking();
       activeNPC = null;
       dialogueBox.style.display = 'none';
     }
@@ -246,7 +284,9 @@ window.addEventListener('DOMContentLoaded', () => {
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     walls.forEach(wall => wall.draw(ctx));
+
     npcs.forEach(npc => npc.draw(ctx));
+
     player.draw(ctx);
 
     if (debugMode) drawDebug(ctx);
@@ -270,6 +310,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     if (!paused) {
       player.move(elapsed, keys, walls);
+      npcs.forEach(npc => npc.update(elapsed));
     }
     checkNpcProximity();
   }
