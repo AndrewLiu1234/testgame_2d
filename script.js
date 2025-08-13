@@ -210,17 +210,17 @@ window.addEventListener('DOMContentLoaded', () => {
   const walls = [wallTop, wallBottom, door, wallLeft, wallRight, wallTopEdge, wallBottomEdge];
 
   const npcs = [
-    new NPC(300, 100, 'pics/npcSprites/captainZoom.png', 1, 4, 'Professor Quirk', [
+    new NPC(300, 100, 'pics/npcSprites/captainZoom.png', 2, 2, 'Professor Quirk', [
       "I swear these rocks are whispering secrets.",
       "Last night, I heard them plotting a heist.",
       "Do you think I'm losing it? Maybe..."
     ]),
-    new NPC(100, 300, 'pics/npcSprites/captainZoom.png', 1, 4, 'Ms. Noodle', [
+    new NPC(100, 300, 'pics/npcSprites/captainZoom.png', 2, 2, 'Ms. Noodle', [
       "Spaghetti is the key to life, trust me!",
       "Linguine? Overrated.",
       "Macaroni knows all my secrets."
     ]),
-    new NPC(450, 350, 'pics/npcSprites/captainZoom.png', 1, 4, 'Captain Zoom', [
+    new NPC(450, 350, 'pics/npcSprites/captainZoom.png', 2, 2, 'Captain Zoom', [
       "Speed is everything, but where’s my spaceship?",
       "It was here a second ago...",
       "Do you think the rocks took it?"
