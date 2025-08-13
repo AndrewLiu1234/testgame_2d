@@ -205,17 +205,17 @@ window.addEventListener('DOMContentLoaded', () => {
 
   // Updated NPCs with spritesheet sources
   const npcs = [
-    new NPC(300, 100, 'pics/npcSprites/captainZoom.png', 64, 64, 4, 'Professor Quirk', [
+    new NPC(300, 100, 'pics/npcSprites/captainZoom.png', 32, 32, 4, 'Professor Quirk', [
       "I swear these rocks are whispering secrets.",
       "Last night, I heard them plotting a heist.",
       "Do you think I'm losing it? Maybe..."
     ]),
-    new NPC(100, 300, 'pics/npcSprites/captainZoom.png', 64, 64, 4, 'Ms. Noodle', [
+    new NPC(100, 300, 'pics/npcSprites/captainZoom.png', 32, 32, 4, 'Ms. Noodle', [
       "Spaghetti is the key to life, trust me!",
       "Linguine? Overrated.",
       "Macaroni knows all my secrets."
     ]),
-    new NPC(450, 350, 'pics/npcSprites/captainZoom.png', 64, 64, 4, 'Captain Zoom', [
+    new NPC(450, 350, 'pics/npcSprites/captainZoom.png', 32, 32, 4, 'Captain Zoom', [
       "Speed is everything, but where’s my spaceship?",
       "It was here a second ago...",
       "Do you think the rocks took it?"
